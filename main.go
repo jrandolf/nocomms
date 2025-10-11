@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -449,12 +450,14 @@ func processFile(inputPath string) error {
 
 // collapseExcessiveNewlines iteratively removes double newlines to normalize spacing.
 // The iterative approach handles any number of consecutive newlines (3+), not just pairs.
+// Also removes any whitespace (spaces, tabs) between newlines.
 func collapseExcessiveNewlines(content string) string {
-	result := content
-	for strings.Contains(result, "\n\n") {
-		result = strings.ReplaceAll(result, "\n\n", "\n")
+	// Remove whitespace between newlines first
+	re := regexp.MustCompile(`\n\s+\n`)
+	for re.Match([]byte(content)) {
+		content = re.ReplaceAllString(content, "\n")
 	}
-	return result
+	return content
 }
 
 func processBatches(files []string, batchSize int, prompt string) error {
