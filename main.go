@@ -429,6 +429,8 @@ func processFile(inputPath string) error {
 		cleaned = removeRustComments(string(content))
 	case ".tf", ".tfvars":
 		cleaned = removeTerraformComments(string(content))
+	case ".yaml", ".yml":
+		cleaned = removeYAMLComments(string(content))
 	default:
 		// Return special error type to indicate unsupported file should be skipped
 		return &ErrUnsupportedFileType{Extension: ext}
@@ -548,6 +550,8 @@ func formatFile(file string) error {
 		cmd = exec.Command("rustfmt", file)
 	case ".tf", ".tfvars":
 		cmd = exec.Command("terraform", "fmt", file)
+	case ".yaml", ".yml":
+		cmd = exec.Command("yamlfmt", file)
 	default:
 		// No formatter configured for this file type; skip silently
 		return nil
