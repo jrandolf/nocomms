@@ -192,7 +192,7 @@ func (c *FileCache) markProcessed(filePath string) error {
 }
 
 func main() {
-	batchSize := flag.Int("batch-size", 5, "Number of files to process in parallel per batch")
+	batchSize := flag.Int("batch-size", 8, "Number of files to process in parallel per batch")
 	forceProcess := flag.Bool("force", false, "Force reprocessing of all files, ignoring cache")
 	cacheOnly := flag.Bool("cache-only", false, "Mark files as cached without processing (useful for initialization)")
 	prompt := flag.String("prompt", `You are tasked with adding thoughtful, meaningful comments to the
@@ -526,7 +526,7 @@ func runClaude(file, prompt string) error {
 
 	// bypassPermissions mode is required because Claude needs write access to modify files,
 	// and interactive permission prompts would block batch processing
-	cmd := exec.Command("claude", "--permission-mode", "bypassPermissions", "-p", strings.Replace(prompt, "{filename}", file, 1))
+	cmd := exec.Command("claude", "--dangerously-skip-permissions", "--model", "haiku", "--permission-mode", "bypassPermissions", "-p", strings.Replace(prompt, "{filename}", file, 1))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
