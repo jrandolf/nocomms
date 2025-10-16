@@ -453,7 +453,7 @@ func processFile(inputPath string) error {
 // Also removes any whitespace (spaces, tabs) between newlines.
 func collapseExcessiveNewlines(content string) string {
 	// Remove whitespace between newlines first
-	re := regexp.MustCompile(`\n\s+\n`)
+	re := regexp.MustCompile(`\n\s*\n`)
 	for re.Match([]byte(content)) {
 		content = re.ReplaceAllString(content, "\n")
 	}
