@@ -198,6 +198,20 @@ func main() {
 	prompt := flag.String("prompt", `You are tasked with adding thoughtful, meaningful comments to the
 {filename} ONLY. Do not modify any other files or suggest
 changes to other files.
+
+## Context Gathering for Complex Code
+Before adding comments, thoroughly analyze the codebase context:
+1. **Examine imports and dependencies** - Look at what external libraries, modules, or APIs this code relies on and their specific behaviors or constraints
+2. **Study related files** - Consider how this code interacts with other parts of the system, especially interfaces, shared types, or utility functions
+3. **Understand the broader architecture** - Identify the role this code plays in the overall system and any architectural patterns or constraints
+4. **Research external context** - When you encounter unfamiliar APIs, frameworks, or domain-specific logic, reason about what additional context would help explain the code's purpose and constraints
+5. **Identify complexity indicators** - Pay special attention to:
+   - Complex algorithms or data structures that aren't immediately obvious
+   - Error handling that suggests specific edge cases or failure modes
+   - Performance optimizations that trade readability for efficiency
+   - Security considerations or access control logic
+   - Business logic that requires domain knowledge to understand
+
 ## Core Principles
 1. **Focus on "Why", not "What"**: The code itself should be
 self-documenting through clear variable, function, and type names.
@@ -217,6 +231,8 @@ immediately clear
 	- APIs that require careful usage to avoid errors
 	- Code that appears unusual but is intentional (explain why the
 unusual approach is necessary)
+	- External dependencies or frameworks that have specific behaviors
+or constraints that aren't obvious
 4. **Preserve Code Clarity**: If the code can be made clearer
 through better naming rather than comments, note this but DO NOT
 rename anything - only add comments to the existing code as-is.
@@ -226,29 +242,38 @@ readability and logical grouping. Follow language-specific conventions:
 	- Separate related but distinct operations with blank lines
 	- Group related statements together without blank lines
 	- Follow standard formatting conventions for the language
+
 ## What to Comment
 - **Why** a particular approach was chosen over alternatives
 - **Why** certain edge cases are handled in specific ways
 - **Why** performance optimizations are structured as they are
 - **Why** business rules require specific logic flow
+- **Why** specific external APIs or frameworks are used and their constraints
+- **Why** complex data structures or algorithms are implemented this way
 - Assumptions that must hold true for the code to work correctly
 - Side effects that aren't immediately obvious
 - Relationships between distant parts of the code (e.g., callbacks
 defined far from their usage)
+- External context or domain knowledge required to understand the code
+
 ## What NOT to Comment
 - Obvious operations clearly expressed by the code itself
 - Simple getters/setters or trivial functions
 - Standard language idioms or patterns
 - Anything that would be redundant with the function/variable names
+- Well-known APIs or frameworks where the usage is standard
+
 ## Output Format
 Write to the same file with comments added in the
 appropriate language-specific comment syntax AND improved formatting
 with appropriate newlines. Preserve all existing code exactly as-is -
 only add comments and improve whitespace/newline placement for better
 readability.
+
 Remember: Comments should make future maintainers' lives easier by
-explaining the non-obvious, not burden them with noise. Proper
-formatting makes code easier to scan and understand.
+explaining the non-obvious, not burden them with noise. When you encounter
+complex code that would benefit from external context, explain what
+additional context would be helpful for future maintainers.
 `, "Prompt to send to Claude")
 
 	flag.Parse()
