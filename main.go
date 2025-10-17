@@ -414,22 +414,8 @@ func run(config Config) error {
 
 	fmt.Printf("\nProcessing %d files in batches of %d...\n\n", len(processedFiles), config.BatchSize)
 
-	if err := processBatches(processedFiles, config.BatchSize, config.Prompt); err != nil {
+	if err := processBatches(processedFiles, config.BatchSize, config.Prompt, cache); err != nil {
 		return err
-	}
-
-	// Cache updates happen after successful Claude processing to prevent marking
-	// files as processed if Claude fails partway through
-	for _, file := range processedFiles {
-		if err := cache.markProcessed(file); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to update cache for %s: %v\n", file, err)
-		}
-	}
-
-	// Cache save failures are warnings rather than errors because processing succeeded;
-	// worst case is redundant work on next run
-	if err := cache.save(); err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: failed to save cache: %v\n", err)
 	}
 
 	return nil
@@ -485,7 +471,7 @@ func collapseExcessiveNewlines(content string) string {
 	return content
 }
 
-func processBatches(files []string, batchSize int, prompt string) error {
+func processBatches(files []string, batchSize int, prompt string, cache *FileCache) error {
 	for i := 0; i < len(files); i += batchSize {
 		end := min(i+batchSize, len(files))
 		batch := files[i:end]
@@ -494,6 +480,20 @@ func processBatches(files []string, batchSize int, prompt string) error {
 
 		if err := processBatch(batch, prompt); err != nil {
 			return fmt.Errorf("batch processing failed: %w", err)
+		}
+
+		// Cache updates happen after each successful batch to prevent data loss
+		// if processing is interrupted partway through
+		for _, file := range batch {
+			if err := cache.markProcessed(file); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to update cache for %s: %v\n", file, err)
+			}
+		}
+
+		// Cache save failures are warnings rather than errors because processing succeeded;
+		// worst case is redundant work on next run
+		if err := cache.save(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to save cache: %v\n", err)
 		}
 	}
 
