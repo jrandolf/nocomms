@@ -143,7 +143,7 @@ func (c *FileCache) save() error {
 		return fmt.Errorf("failed to marshal cache: %w", err)
 	}
 
-	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+	if err := os.WriteFile(cachePath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
 
@@ -191,10 +191,37 @@ func (c *FileCache) markProcessed(filePath string) error {
 	return nil
 }
 
+// getStagedFiles retrieves the list of staged files from git.
+// These are files that have been added to the git staging area via git add.
+func getStagedFiles() ([]string, error) {
+	cmd := exec.Command("git", "diff", "--staged", "--name-only")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get staged files: %w", err)
+	}
+
+	// Split by newlines and filter out empty strings
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	files := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			files = append(files, line)
+		}
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no staged files found")
+	}
+
+	return files, nil
+}
+
 func main() {
-	batchSize := flag.Int("batch-size", 8, "Number of files to process in parallel per batch")
+	batchSize := flag.Int("batch-size", 24, "Number of files to process in parallel per batch")
 	forceProcess := flag.Bool("force", false, "Force reprocessing of all files, ignoring cache")
 	cacheOnly := flag.Bool("cache-only", false, "Mark files as cached without processing (useful for initialization)")
+	staged := flag.Bool("staged", false, "Process only staged files from git")
 	prompt := flag.String("prompt", `You are tasked with adding thoughtful, meaningful comments to the
 {filename} ONLY. Do not modify any other files or suggest
 changes to other files.
@@ -284,11 +311,25 @@ additional context would be helpful for future maintainers.
 		os.Exit(1)
 	}
 
-	files := flag.Args()
-	if len(files) == 0 {
-		fmt.Fprintln(os.Stderr, "Error: No files provided")
-		flag.Usage()
-		os.Exit(1)
+	var files []string
+	var err error
+
+	if *staged {
+		// Get staged files from git when -staged flag is set
+		files, err = getStagedFiles()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Found %d staged file(s)\n", len(files))
+	} else {
+		// Use command-line arguments when -staged flag is not set
+		files = flag.Args()
+		if len(files) == 0 {
+			fmt.Fprintln(os.Stderr, "Error: No files provided. Use -staged flag or provide file paths as arguments")
+			flag.Usage()
+			os.Exit(1)
+		}
 	}
 
 	// Convert all input paths to absolute paths upfront to ensure consistent
@@ -452,7 +493,7 @@ func processFile(inputPath string) error {
 	// providing Claude with cleaner, more readable code to comment
 	cleaned = collapseExcessiveNewlines(cleaned)
 
-	if err := os.WriteFile(inputPath, []byte(cleaned), 0644); err != nil {
+	if err := os.WriteFile(inputPath, []byte(cleaned), 0o644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
