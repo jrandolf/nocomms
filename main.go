@@ -240,26 +240,23 @@ Before adding comments, thoroughly analyze the codebase context:
    - Business logic that requires domain knowledge to understand
 
 ## Core Principles
-1. **Focus on "Why", not "What"**: The code itself should be
-self-documenting through clear variable, function, and type names.
-Comments should explain the rationale, not restate what the code
-does.
-2. **Avoid Redundant Comments**: Do NOT add comments that simply
-restate what is obvious from the code. Comments that duplicate what
-the code clearly expresses add clutter and maintenance burden.
-3. **Target Nuances and Complexity**: Add comments specifically for:
-	- Language-specific subtleties (e.g., closure capturing loop
-variables, unexpected type conversions)
-	- Business logic nuances (e.g., access control distinctions, edge
-cases in requirements)
-	- Performance-critical sections with non-obvious optimizations
-	- Complex algorithms or mathematical operations that aren't
-immediately clear
-	- APIs that require careful usage to avoid errors
-	- Code that appears unusual but is intentional (explain why the
-unusual approach is necessary)
-	- External dependencies or frameworks that have specific behaviors
-or constraints that aren't obvious
+1. **Focus on "Why", not "What"**: Comments should explain the RATIONALE and INTENT behind the code, not describe what it does. If a comment starts with "This code..." or "This function...", it's likely describing "what" instead of "why". Good comments answer questions like:
+   - Why was this approach chosen over simpler alternatives?
+   - Why must this edge case be handled this way?
+   - Why is this performance optimization structured like this?
+   - Why does this business rule require this specific logic?
+   - Why is this seemingly unusual code actually the correct approach?
+
+2. **Embrace Strategic Silence**: Most code is self-explanatory through good naming and should have NO comments. Only comment when there's a genuine gap between what the code appears to do and why it must do it that way. Ask: "Would a reasonably experienced developer understand both WHAT this code does AND WHY it must work this way without comments?"
+
+3. **Target Only True Complexity**: Add comments ONLY for:
+	- Language-specific subtleties (e.g., "Closure captures loop variable by reference, not value")
+	- Business logic nuances (e.g., "Must check both user role AND subscription status for access")
+	- Performance-critical sections with non-obvious optimizations (e.g., "O(n) vs O(n²) choice due to data size constraints")
+	- Complex algorithms that aren't immediately clear (e.g., "Using A* search because Dijkstra's would be O(n²) for this graph density")
+	- APIs that require careful usage to avoid errors (e.g., "Must call Close() to prevent resource leaks in this framework")
+	- Code that appears unusual but is intentional (e.g., "Polling used instead of events because USB driver doesn't support async notifications")
+	- External dependencies with specific constraints (e.g., "PostgreSQL JSONB used for schemaless data despite MongoDB alternative")
 4. **Preserve Code Clarity**: If the code can be made clearer
 through better naming rather than comments, note this but DO NOT
 rename anything - only add comments to the existing code as-is.
@@ -284,11 +281,14 @@ defined far from their usage)
 - External context or domain knowledge required to understand the code
 
 ## What NOT to Comment
-- Obvious operations clearly expressed by the code itself
-- Simple getters/setters or trivial functions
-- Standard language idioms or patterns
-- Anything that would be redundant with the function/variable names
-- Well-known APIs or frameworks where the usage is standard
+- **Any comment that starts with "This..."**: "This function...", "This code...", "This variable..." - these describe WHAT, not WHY
+- **Obvious operations**: "Increment counter", "Return true if valid", "Loop through array"
+- **Simple getters/setters**: "Get user name", "Set user age"
+- **Standard patterns**: "Check if nil", "Handle error", "Validate input"
+- **Trivial functions**: Functions with 1-3 lines that do exactly what their name suggests
+- **Redundant explanations**: Comments that just rephrase what clear variable/function names already express
+- **Well-known APIs**: Standard usage of fmt.Println, json.Unmarshal, http.Get, etc.
+- **Self-documenting code**: Any code where good naming makes the purpose and logic crystal clear
 
 ## Output Format
 Write to the same file with comments added in the
@@ -297,10 +297,7 @@ with appropriate newlines. Preserve all existing code exactly as-is -
 only add comments and improve whitespace/newline placement for better
 readability.
 
-Remember: Comments should make future maintainers' lives easier by
-explaining the non-obvious, not burden them with noise. When you encounter
-complex code that would benefit from external context, explain what
-additional context would be helpful for future maintainers.
+Remember: **Strategic silence is golden.** Most code needs no comments when well-named. Comments should make future maintainers' lives easier by explaining the non-obvious, not burden them with noise. Only comment when there's a genuine gap between what the code appears to do and why it must work that specific way. When you encounter complex code that would benefit from external context, explain what additional context would be helpful for future maintainers.
 `, "Prompt to send to Claude")
 
 	flag.Parse()
@@ -598,6 +595,14 @@ func runClaude(file, prompt string) error {
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("claude command failed: %w", err)
+	}
+
+	if err := formatFile(file); err != nil {
+		// Formatter failures are warnings because formatting is a quality-of-life feature,
+		// not critical to comment generation
+		fmt.Fprintf(os.Stderr, "  [%s] Warning: formatter failed: %v\n", filepath.Base(file), err)
+	} else {
+		fmt.Printf("  [%s] Formatted\n", filepath.Base(file))
 	}
 
 	fmt.Printf("  [%s] Completed\n", filepath.Base(file))
