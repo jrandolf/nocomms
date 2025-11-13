@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -486,27 +485,11 @@ func processFile(inputPath string) error {
 		return &ErrUnsupportedFileType{Extension: ext}
 	}
 
-	// Excessive newlines are collapsed because comment removal can leave gaps,
-	// providing Claude with cleaner, more readable code to comment
-	cleaned = collapseExcessiveNewlines(cleaned)
-
 	if err := os.WriteFile(inputPath, []byte(cleaned), 0o644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
 	return nil
-}
-
-// collapseExcessiveNewlines iteratively removes double newlines to normalize spacing.
-// The iterative approach handles any number of consecutive newlines (3+), not just pairs.
-// Also removes any whitespace (spaces, tabs) between newlines.
-func collapseExcessiveNewlines(content string) string {
-	// Remove whitespace between newlines first
-	re := regexp.MustCompile(`\n\s*\n`)
-	for re.Match([]byte(content)) {
-		content = re.ReplaceAllString(content, "\n")
-	}
-	return content
 }
 
 func processBatches(files []string, batchSize int, prompt string, cache *FileCache) error {

@@ -8,54 +8,6 @@ import (
 	"time"
 )
 
-func TestCollapseExcessiveNewlines(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "no changes needed - single newline",
-			input:    "line1\nline2\nline3",
-			expected: "line1\nline2\nline3",
-		},
-		{
-			name:     "collapse triple newlines to single",
-			input:    "line1\n\n\nline2",
-			expected: "line1\nline2",
-		},
-		{
-			name:     "collapse quadruple newlines to single",
-			input:    "line1\n\n\n\nline2",
-			expected: "line1\nline2",
-		},
-		{
-			name:     "multiple sequences to collapse",
-			input:    "line1\n\n\nline2\n\n\n\nline3",
-			expected: "line1\nline2\nline3",
-		},
-		{
-			name:     "empty string",
-			input:    "",
-			expected: "",
-		},
-		{
-			name:     "only newlines",
-			input:    "\n\n\n\n",
-			expected: "\n",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := collapseExcessiveNewlines(tt.input)
-			if result != tt.expected {
-				t.Errorf("collapseExcessiveNewlines() = %q, want %q", result, tt.expected)
-			}
-		})
-	}
-}
-
 func TestFindGitRoot(t *testing.T) {
 	originalDir, err := os.Getwd()
 	if err != nil {
@@ -76,7 +28,7 @@ func TestFindGitRoot(t *testing.T) {
 	// Test that findGitRoot works from a subdirectory
 	if err := os.Chdir(gitRoot); err == nil {
 		tempDir := filepath.Join(gitRoot, "temp_test_dir")
-		if err := os.Mkdir(tempDir, 0755); err == nil {
+		if err := os.Mkdir(tempDir, 0o755); err == nil {
 			defer os.RemoveAll(tempDir)
 
 			if err := os.Chdir(tempDir); err == nil {
@@ -160,7 +112,7 @@ func TestFileCacheSaveLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("json.MarshalIndent() error = %v", err)
 	}
-	if err := os.WriteFile(tempCache, data, 0644); err != nil {
+	if err := os.WriteFile(tempCache, data, 0o644); err != nil {
 		t.Fatalf("os.WriteFile() error = %v", err)
 	}
 
